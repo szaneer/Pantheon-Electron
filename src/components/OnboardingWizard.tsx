@@ -281,7 +281,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                   type="url"
                   value={signalingServerUrl}
                   onChange={(e) => setSignalingServerUrl(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   placeholder="http://localhost:3001"
                 />
                 <p className="mt-2 text-sm text-gray-600">
@@ -298,7 +298,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                   type="text"
                   value={authKey}
                   onChange={(e) => setAuthKey(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   placeholder="Enter auth key or leave empty"
                 />
                 <p className="mt-2 text-sm text-gray-600">
@@ -641,7 +641,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Save server configuration when moving from step 1
     if (currentStep === 1) {
       localStorage.setItem('signalingServerUrl', signalingServerUrl);
@@ -655,6 +655,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
       if (window.electronAPI?.store) {
         window.electronAPI.store.set('signalingServerUrl', signalingServerUrl);
         window.electronAPI.store.set('authKey', authKey || '');
+      }
+      
+      // Reinitialize P2P connection with new auth key
+      try {
+        const currentUserId = await window.electronAPI?.getStoreValue('currentUserId');
+        if (currentUserId) {
+          console.log('🔄 Reinitializing P2P with new auth key...');
+          await window.electronAPI?.p2p?.setCurrentUserId(currentUserId, authKey || undefined);
+          console.log('✅ P2P reinitialized successfully');
+        }
+      } catch (error) {
+        console.error('❌ Failed to reinitialize P2P:', error);
       }
     }
     

@@ -3,7 +3,6 @@ const path = require('path');
 const { readFile } = require('fs').promises;
 const { URL } = require('url');
 const loggingService = require('../src/services/loggingService');
-const autoUpdaterService = require('./services/autoUpdater');
 
 // Initialize logging service
 loggingService.initialize();
@@ -56,89 +55,6 @@ const { logCompatibilityReport } = require('../src/services/checkX86Compatibilit
 
 const store = new Store();
 
-// Auto-updater configuration
-function setupAutoUpdater() {
-  // Skip auto-updater if running in development or if no publish config
-  if (isDev) {
-    console.log('🔄 Skipping auto-updater in development mode');
-    return;
-  }
-  
-  console.log('🔄 Setting up auto-updater...');
-  
-  // Configure auto-updater
-  autoUpdater.autoDownload = false; // Don't auto-download, ask user first
-  autoUpdater.autoInstallOnAppQuit = true;
-  
-  // Auto-updater events
-  autoUpdater.on('checking-for-update', () => {
-    console.log('🔍 Checking for updates...');
-  });
-  
-  autoUpdater.on('update-available', (info) => {
-    console.log('✅ Update available:', info.version);
-    
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Update Available',
-      message: `A new version ${info.version} is available. Would you like to download it now?`,
-      detail: 'The update will be installed automatically when you restart the app.',
-      buttons: ['Download', 'Later'],
-      defaultId: 0
-    }).then((result) => {
-      if (result.response === 0) {
-        autoUpdater.downloadUpdate();
-      }
-    });
-  });
-  
-  autoUpdater.on('update-not-available', () => {
-    console.log('ℹ️ No updates available');
-  });
-  
-  autoUpdater.on('error', (error) => {
-    console.error('❌ Auto-updater error:', error);
-  });
-  
-  autoUpdater.on('download-progress', (progressObj) => {
-    let log_message = "Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    console.log(log_message);
-    
-    // Send progress to renderer
-    if (mainWindow) {
-      mainWindow.webContents.send('download-progress', progressObj);
-    }
-  });
-  
-  autoUpdater.on('update-downloaded', (info) => {
-    console.log('✅ Update downloaded:', info.version);
-    
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Update Ready',
-      message: 'Update downloaded. The application will restart to apply the update.',
-      buttons: ['Restart Now', 'Later'],
-      defaultId: 0
-    }).then((result) => {
-      if (result.response === 0) {
-        autoUpdater.quitAndInstall();
-      }
-    });
-  });
-  
-  // Check for updates with error handling
-  setTimeout(() => {
-    try {
-      autoUpdater.checkForUpdates().catch(err => {
-        console.log('Auto-updater check failed:', err.message);
-      });
-    } catch (error) {
-      console.log('Auto-updater not configured:', error.message);
-    }
-  }, 5000); // Delay initial check
-}
 
 let mainWindow;
 let httpServer;
@@ -185,22 +101,6 @@ function createWindow() {
       label: app.getName(),
       submenu: [
         { role: 'about' },
-        { type: 'separator' },
-        {
-          label: 'Check for Updates...',
-          click: () => {
-            if (!isDev) {
-              autoUpdater.checkForUpdates();
-            } else {
-              dialog.showMessageBox(mainWindow, {
-                type: 'info',
-                title: 'Development Mode',
-                message: 'Auto-updates are disabled in development mode.',
-                buttons: ['OK']
-              });
-            }
-          }
-        },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -342,13 +242,6 @@ function createWindow() {
     {
       label: 'Help',
       submenu: [
-        {
-          label: 'Check for Updates...',
-          click: () => {
-            autoUpdaterService.checkForUpdatesManually();
-          }
-        },
-        { type: 'separator' },
         {
           label: 'About Pantheon',
           click: () => {
@@ -665,19 +558,6 @@ app.whenReady().then(async () => {
   createWindow();
   createTray();
   
-  // Setup auto-updater
-  if (!isDev && process.platform !== 'linux') {
-    // Check for updates after a short delay
-    setTimeout(() => {
-      console.log('🔄 Checking for updates...');
-      autoUpdaterService.checkForUpdates();
-    }, 3000);
-    
-    // Check for updates every 4 hours
-    setInterval(() => {
-      autoUpdaterService.checkForUpdates();
-    }, 4 * 60 * 60 * 1000);
-  }
   
   // Start HTTP server for incoming requests (P2P mode)
   try {

@@ -131,6 +131,23 @@ DEBUG=* npm run dev
 
 This is part of the [Pantheon](https://github.com/szaneer/Pantheon) ecosystem. Please refer to the main repository for contribution guidelines.
 
+## ⚖️ Legal Disclaimer
+
+**This software is provided "AS IS" without warranty of any kind.**
+
+- Use entirely at your own risk
+- Author not liable for any damages or data loss  
+- Experimental software not for production use
+- AI interactions may produce inappropriate content
+- P2P connections may expose security risks
+
+**By using this software, you accept all risks and waive any claims against the author.**
+
+## 👥 Attribution
+
+**Author**: Siraj Zaneer  
+**Copyright**: © 2025 Siraj Zaneer
+
 ## 📄 License
 
 MIT License - see [LICENSE](../../LICENSE) for details.
